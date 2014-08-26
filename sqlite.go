@@ -16,11 +16,26 @@ type Sqlite struct {
 	filename string
 }
 
+type IteratorSqlite struct {
+}
+
+func (i *IteratorSqlite) Next() (has_next bool) {
+	return false
+}
+
+func (i *IteratorSqlite) Value() (p *Photo) {
+	return nil
+}
+
 func (d *Sqlite) New() (p *Photo) {
 	photo := &Photo{}
 	photo.idx = d
 	photo.created = time.Now()
 	return photo
+}
+
+func (d *Sqlite) Search(s string, offset, perpage int) (i Iterator, err error) {
+	return &IteratorSqlite{}, nil
 }
 
 func (d *Sqlite) save(p *Photo) (err error) {
@@ -39,9 +54,6 @@ func (d *Sqlite) save(p *Photo) (err error) {
 
 func (d *Sqlite) insert(p *Photo) (err error) {
 	var db = d.db
-	if d.db == nil {
-		return fmt.Errorf("Database not initialized")
-	}
 	var newId = uuid.New()
 
 	fmt.Println(db)
@@ -60,9 +72,15 @@ func (d *Sqlite) update(p *Photo) (err error) {
 	return err
 }
 
-func (d *Sqlite) get() (p *Photo, err error) {
-	photo := &Photo{}
-	return photo, err
+func (d *Sqlite) get(id string) (p *Photo, err error) {
+	p = &Photo{}
+	err = d.db.QueryRow("SELECT id, title, description, path, owner, created FROM photos WHERE id=?", id).Scan(p.id, p.title, p.description, p.path, p.owner, p.created)
+	if err != nil {
+		return nil, err
+	}
+	// todo: Get tags as well
+
+	return p, err
 }
 
 func (d *Sqlite) init() (err error) {
